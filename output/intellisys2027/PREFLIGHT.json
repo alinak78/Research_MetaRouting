@@ -1,0 +1,30 @@
+{
+  "pages_total": 15,
+  "references_start_page": 15,
+  "abstract_words": 201,
+  "references_cited": 11,
+  "figures_numbered_and_cited": 3,
+  "tables_numbered_and_cited": 3,
+  "author_metadata_empty": true,
+  "generic_identity_strings_absent": true,
+  "known_identity_patterns_checked": 10,
+  "owner_identifiers_absent": true,
+  "embedded_body_fonts": [
+    "/JRYMRO+TimesNewRomanPS-BoldMT",
+    "/JGUKHG+TimesNewRomanPSMT",
+    "/NGTUOI+TimesNewRomanPS-ItalicMT",
+    "/SHLWCH+NewTXMI",
+    "/REENYM+txsys",
+    "/GSXJFF+LMRoman10-Regular",
+    "/IHDCWL+NewTXMI7",
+    "/YBQRHU+txmiaX",
+    "/VEQQKW+txexs",
+    "/RQXYOW+LMRoman7-Regular",
+    "/GTVRJV+NewTXMI5",
+    "/JHLEDX+LMMono10-Regular"
+  ],
+  "latex_warnings_or_overfull_boxes": false,
+  "template_sha256": "ddfc1f23edfbb51f13bb6a6e427b63c41cc9a965f08a3bc65e83c81ee9ae9560",
+  "pdf_sha256": "5c7eb264267edbcada23a1bdeed19e005136019e3c6e9eaa0e905ac1dbe97b5a",
+  "limits": "Automated checks do not certify research originality, author review, or GenAI-policy eligibility."
+}

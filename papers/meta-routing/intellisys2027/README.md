@@ -21,7 +21,7 @@ PYTHONPATH=src python experiments/meta-routing/intellisys2027/prepare_paper.py
 python -m pytest -q
 ```
 
-For the supplied run, use only `prepare_paper.py` to verify trace-derived summaries and regenerate tables/figures. It checks the paired fault schedule, budget ledger, outcomes, frozen source hashes, data hashes, abstract length, and citation coverage.
+For the supplied run, use `prepare_paper.py` to verify trace-derived summaries and regenerate tables/figures. It checks the paired fault schedule, budget ledger, outcomes, frozen source hashes, data hashes, abstract length, and citation coverage.
 
 Build the manuscript from this folder:
 
@@ -29,7 +29,9 @@ Build the manuscript from this folder:
 latexmk -xelatex -interaction=nonstopmode -halt-on-error -outdir=build main.tex
 ```
 
-The official IntelliSys download supplies the unmodified `svproc.cls`, associated styles, and `splncs03.bst`. XeLaTeX uses Times New Roman, as specified in the provided template. Install Times New Roman if the build host lacks it; do not change the template margins to match a page count. Figures are vector PDFs.
+Then, from the repository root, run `python experiments/meta-routing/intellisys2027/finalize_paper.py` to export the anonymous PDF and generate `output/intellisys2027/PREFLIGHT.json`. Run `package_study.py` afterward to refresh both source bundles. For a scan against known author names and affiliations, set `INTELLISYS_AUTHOR_IDENTIFIERS_FILE` to a private file containing one identifying phrase per line; keep that file outside the repository and submission bundles.
+
+The official IntelliSys download supplies the unmodified `svproc.cls`, associated styles, and `splncs03.bst`. XeLaTeX uses Times New Roman, as specified in the provided template. Install Times New Roman if the build host lacks it; do not change the template margins to match a page count. Figures are vector PDFs designed near the final text width, with approximately 9-point or larger chart text. Figure 2 uses stacked panels and an external legend; Figure 3 and Table 3 distinguish main (M) from exploratory (E) results.
 
 Official requirements: https://saiconference.com/IntelliSys/CallforPapers
 Template: https://saiconference.com/Downloads/SAI_Paper_Format_Latex_Conference.zip
@@ -46,4 +48,10 @@ This is an anonymous **research draft**, not an externally submitted paper. The 
 
 IntelliSys requires human authors to develop and take responsibility for scientific ideas, arguments, results, and conclusions, and to review AI-assisted material. The manuscript discloses the actual AI assistance, including design and code. Human authors must review and take ownership of this work before submission; no such approval is claimed. The anonymous related-submission reference may need to be accompanied by the companion manuscript through the portal or chairs.
 
-Initial submission is PDF only. The abstract is 201 words; the built draft is 12 pages including references, below the stated limit of 18 main-text pages plus up to 7 pages for references/appendices. These facts do not establish research acceptance or originality clearance. The Round 1 deadline listed by the CFP is 1 November 2026 AoE.
+Initial submission is PDF only. The abstract is 201 words; the revised draft is 15 pages including references, below the stated limit of 18 main-text pages plus up to 7 pages for references/appendices. These facts do not establish research acceptance or originality clearance. The Round 1 deadline listed by the CFP is 1 November 2026 AoE.
+
+## Editorial revision from author suggestions
+
+The introduction now motivates deterministic control-layer evaluation in the context of LLM tool-use architectures. “Foundational lower-bound” is explicitly a simplified engineering test, not a mathematical lower bound or demonstrated transfer to LLM agents. The main shared-corruption condition has an explicit analytical expectation, while the independent-value-collision extension remains exploratory. Section 8 adds candidate semantic/invariant checks and independent computation paths, with their validation and invocation costs left explicit. The experimental protocol, fitted controllers, fault schedules, and numerical results have not been changed.
+
+See `SUBMISSION_CHECKLIST.md` for automated checks, visual review, and remaining human-author responsibilities.

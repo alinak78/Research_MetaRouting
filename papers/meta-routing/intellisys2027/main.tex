@@ -8,6 +8,7 @@
 \def\UrlFont{\rmfamily}
 \usepackage{graphicx,booktabs,amsmath}
 \usepackage{algorithm,algorithmic}
+\usepackage{placeins}
 \usepackage[hidelinks]{hyperref}
 \hypersetup{pdfauthor={},pdftitle={When Tool Agreement Is Not Enough},pdfsubject={Anonymous IntelliSys 2027 research draft}}
 \begin{document}
@@ -27,6 +28,11 @@ Intelligent workflows must decide whether to accept a tool response, retry a fai
 A successful tool invocation does not establish that its response is correct. A database can return an error, a computation can return an incorrect scalar, or several components can return the same incorrect scalar. An intelligent workflow controller must decide what to do with these different observations while respecting a resource limit. Retrying, switching tools, and requiring agreement allocate resources differently and provide different kinds of evidence.
 
 This paper studies the acceptance decision after execution, rather than predicting an operation set from task wording. The motivating question is: \emph{under a fixed invocation budget, when does another tool response justify accepting an answer?} The distinction matters because agreement is informative only relative to assumptions about the errors that the components can share. A second successful response can corroborate a result or repeat the same mistake.
+
+\paragraph{Toward Foundational Tool-Use Control.}
+Modern intelligent systems use language-model agents to orchestrate tools, APIs, and computational engines \cite{yao2023react,xiang2026scheduler}. Full agent loops combine controller decisions with language interpretation, stochastic generation, planning, and response parsing. This coupling can make it difficult to distinguish a faulty acceptance rule from an upstream interpretation error.
+
+We therefore present a \emph{controlled, foundational lower-bound study} of the control layer: real numerical engines execute structured queries while the controller allocates a fixed invocation budget $K\in\{1,2,3\}$. Here ``lower-bound'' denotes a deliberately simplified engineering test, not a mathematical lower bound on LLM-agent reliability. The engines are deterministic in fault-free operation; reproducible fault interventions supply the uncertainty. This design isolates whether retry, switching, and verification rules use the available evidence appropriately before adding the further variability of a language-model agent. It provides an auditable precursor to full agent evaluation, while leaving transfer to stochastic LLM-driven workflows untested.
 
 We examine this question with real numerical engines over public tabular data. Structured queries are executed through SQLite, Python reductions, and NumPy. A controlled wrapper injects explicit database exceptions and silent numeric corruptions. Controllers receive the query, their remaining budget, and observed status/value pairs. They cannot see the fault regime, injection state, or evaluation target. Exact invocation counts, including failed calls, replace a manually weighted operation-cost model.
 
@@ -76,6 +82,13 @@ p_1p_2+p_1p_3+p_2p_3-2p_1p_2p_3.
 \end{equation}
 This elementary voting calculation motivates testing the error-value model separately from the event-dependence model. It is not a novel theoretical result or a model of production fault rates.
 
+The main shared-corruption intervention provides a second analytical check. Let $E$ be the event that every response equals the same incorrect scalar, with $P(E)=q$, and suppose all engines return the reference otherwise. For a controller that accepts the mutually consistent response in both cases,
+\begin{equation}
+P(W)=q,\qquad P(C)=1-q.
+\label{eq:shared}
+\end{equation}
+An additional matching response supplies no distinguishing evidence under this observation model. A controller could instead abstain, so Eq.~\ref{eq:shared} is not a universal impossibility bound for every possible policy. It explains the boundary condition tested prospectively in the main evaluation; the later collision extension examines the distinct case of independent corruption events with coinciding wrong values.
+
 \section{Data, Queries, and Executed Engines}
 \subsection{Public Data and Authored Queries}
 We use UCI Iris, Wine, and Banknote Authentication \cite{iris,wine,banknote}. They contain 150, 178, and 1,372 records, respectively, with four, thirteen, and four numeric features. Classification targets are excluded. Raw archives are retained unchanged and hashed. UCI distributes the datasets under CC BY 4.0; dataset attribution is preserved in the artifact.
@@ -118,11 +131,13 @@ where $N$ is actual calls. Ties prefer a higher threshold. This is a declared il
 A \emph{development-selected fixed} control chooses among all seven base policies using the same utility and development distribution, separately for each budget. It is not given the test regime. This comparator tests whether the additional gate improves over an already capable policy selected without test knowledge.
 
 \section{Protocol, Provenance, and Statistical Unit}
+\subsection{Prospective Main Evaluation}
 Development uses the clean, transient, persistent, and independent regimes, with equal weight and ten fault seeds per query. The local protocol, source fingerprints, generated query file, gate thresholds, and fixed-policy choices are recorded before the first main test evaluation. Increased corruption and common-mode faults are excluded from development. The record is local prospective evidence, not externally registered or independently timestamped preregistration.
 
 The main evaluation executes nine policies at three budgets on 72 test queries, ten seeds, and six regimes: 116,640 policy episodes. This count must not be interpreted as 116,640 independent tasks. For paired inference, seeds are averaged within each query and differences are bootstrapped over queries within each dataset, with 1,000 resamples and a fixed random seed. Each dataset contributes equal weight. These intervals describe the authored query suite under stipulated fault schedules; three datasets and four families do not identify uncertainty over real applications generally.
 
-After inspecting the main run, we added an exploratory \emph{collision sensitivity}: keep the independent corruption events unchanged but make every corrupted engine return its true value plus 7. Both nominal and doubled rates are evaluated. The original fitted policies remain frozen, and the source/addendum hashes are saved before this extension. Its 38,880 additional episodes are reported separately from the prospective main evaluation. This extension addresses the structural zero-error property of the initial distinct-offset model; it is not presented as an untouched confirmatory test.
+\subsection{Exploratory Boundary-Condition Analysis}
+After inspecting the main run, we added an exploratory \emph{collision sensitivity}: keep the independent corruption events unchanged but make every corrupted engine return its true value plus 7. Both nominal and doubled rates are evaluated. The original fitted policies remain frozen, and the source/addendum hashes are saved before this extension. Its 38,880 additional episodes are reported separately from the prospective main evaluation. This extension addresses the structural zero-error property of the initial distinct-offset model; it is not presented as an untouched confirmatory test. Its motivation is analytical: Eq.~\ref{eq:wrongagreement} already permits independent failures to agree on a wrong value. That mechanism does not depend on when the extension was designed, but its particular observed rates remain exploratory. The six main regimes and their frozen selection record are unchanged; the extension neither replaces the main evaluation nor supplies a newly independent holdout.
 
 \section{Results}
 \subsection{RQ1: Explicit Recovery Does Not Detect Silent Errors}
@@ -151,13 +166,14 @@ Fixed majority matches agreement's outcomes in the three-call silent regimes but
 
 Figure~\ref{fig:budgets} shows the outcomes across hard call caps. The single-engine baseline has unused capacity at larger caps; this is allowed for every policy. Agreement changes behavior because another invocation can resolve a disagreement. It is the spending decision, rather than the nominal cap alone, that changes the result.
 
+\FloatBarrier
 \subsection{RQ3: Wrong-Value Diversity Changes the Meaning of Agreement}
 \input{collision_table}
-The zero wrong-answer rate above follows partly from assigning distinct erroneous offsets to the engines. It should not be interpreted as a discovered reliability guarantee. Table~\ref{tab:collision} changes the offset model while preserving the same independent corruption events and frozen policies.
+The zero wrong-answer rate above follows partly from assigning distinct erroneous offsets to the engines. It should not be interpreted as a discovered reliability guarantee. Table~\ref{tab:collision} separates prospective main rows (M) from exploratory extension rows (E). Only the E rows change the independent-offset model; they preserve the same corruption events and frozen policies, isolating whether the erroneous values coincide.
 
 In the collision sensitivity, agreement's nominal correctness remains 94.4\%, but its 5.6\% abstention becomes 5.6\% wrong-answer acceptance. With doubled corruption, correctness remains 83.6\% while all 16.4\% previously unresolved episodes become accepted wrong answers. That wrong-answer rate exceeds the selected single engine's 14.9\%. Redundancy can therefore be less reliable than the strongest single engine under this tested collision model. The extension is exploratory and requires independent replication before broader claims.
 
-In the prospective shared-corruption regime, all policies accept the same corrupted value whenever the latent event occurs. Observed wrong-answer acceptance is 26.8\% across the 720 query-seed episodes, with no abstention. Agreement uses two calls and fixed majority uses three, while NumPy alone uses one. The extra calls provide no distinguishing evidence because the observations agree by intervention design.
+In the prospective shared-corruption regime, all policies accept the same corrupted value whenever the latent event occurs. Observed wrong-answer acceptance is 26.8\% across the 720 query-seed episodes, with no abstention. Agreement uses two calls and fixed majority uses three, while NumPy alone uses one. The extra calls provide no distinguishing evidence because the observations agree by intervention design. Equation~\ref{eq:shared} predicts an expected wrong-answer rate of 25\% for these accepting policies; the observed 26.8\% is the finite-sample realization, not an estimate of a natural production failure rate. This prospective shared-fault result establishes the modeled boundary independently of the later collision sensitivity.
 
 \begin{figure}[!htbp]
 \centering
@@ -168,6 +184,7 @@ In the prospective shared-corruption regime, all policies accept the same corrup
 
 Figure~\ref{fig:errors} summarizes the distinction between error-event independence and output diversity. The engine implementations are different, but agreement remains a relation among observed values. It does not by itself identify a correct value or an independent evidence source.
 
+\FloatBarrier
 \section{Discussion and Limitations}
 \subsection{What the Experiment Establishes}
 The controlled interventions distinguish three mechanisms. Retrying addresses a transient explicit failure. Switching addresses a primary-engine failure when another engine works. Agreement addresses conflicting successful responses only insofar as the error model makes those conflicts informative. A call budget constrains each mechanism differently, and a lower wrong-answer rate can be purchased through abstention rather than better answer production.
@@ -175,6 +192,9 @@ The controlled interventions distinguish three mechanisms. Retrying addresses a 
 The appropriate comparison is consequently a vector of correctness, wrong acceptance, coverage, and calls. The chosen utility offers one way to select a development policy, but not a universal ranking. Its selection of the one-call NumPy baseline and collapse of the gate to full verification are central results, not implementation details to omit from the comparison.
 
 The study's narrow contribution is making the acceptance assumptions testable in one response interface. Error-value collisions explain why a seemingly strong zero-error finding can depend on the injector rather than the controller. This supports auditing fault models alongside policies when interpreting tool-reliability experiments, consistent with established warnings about software failure dependence \cite{knight1986}.
+
+\paragraph{Implications for System Designers.}
+System designers should treat multi-engine agreement as evidence conditional on fault diversity and document shared data sources, transformations, and failure modes. Candidate safeguards include semantic checks on the requested computation and invariant-based assertions, such as range or schema checks and nonincreasing counts under stricter filters, alongside genuinely independent data or computation paths. These checks must be evaluated and their invocation costs included in the acceptance budget; they are actionable design hypotheses, not mitigations validated by the present experiments.
 
 \subsection{Limits on Transfer and Causality}
 The engines execute real computations on externally sourced records, but their failures are injected. Neither additive offsets nor the chosen frequencies are calibrated to production incidents. The shared offset deliberately makes the observation histories indistinguishable from consistent answers; its failure result is a boundary check, not a newly measured operational risk.
@@ -190,10 +210,10 @@ The prospective main protocol reduces test-driven tuning, but the collision exte
 \section{Conclusion}
 A workflow's response to failure depends on what it can observe and afford. In this controlled study, retry and switching repair different explicit failures; neither detects a successful but corrupted response. Verification reduces accepted errors under distinct wrong outputs, yet the same independent failure events produce accepted mistakes when erroneous values coincide. Shared corruption removes the benefit of agreement entirely.
 
-The development-tuned gate does not outperform the simple agreement baseline, and the strongest selected single engine remains competitive. These findings define the contribution: an inspectable comparison of acceptance, recovery, and abstention under hard invocation budgets, with the fault model and its construction effects reported alongside outcomes.
+The development-tuned gate does not outperform the simple agreement baseline, and the strongest selected single engine remains competitive. These findings define the contribution: an inspectable comparison of acceptance, recovery, and abstention under hard invocation budgets, with the fault model and its construction effects reported alongside outcomes. By abstracting away LLM stochasticity, this study supplies a controlled baseline for deterministic workflow decisions; extending the same budgeted acceptance contract to stochastic agent-driven environments is an important direction for future research.
 
 \section*{Declaration on Generative AI}
-Generative AI tools assisted study-design development, implementation, experimental analysis, manuscript drafting, language refinement, and figure preparation. The results are produced by the released executable artifacts. Human authors must critically review the research design, arguments, conclusions, code, and manuscript before submission and remain accountable for their accuracy and originality. No completed human review is asserted by this disclosure.
+Generative AI tools assisted study-design development, implementation, experimental analysis, manuscript drafting, language refinement, and figure preparation. The results are produced by the released executable artifacts. Human authors must critically review the research design, arguments, conclusions, code, and manuscript before submission and remain accountable for their accuracy and originality. This draft requires that human review before submission; the disclosure does not assert that it has been completed.
 
 \section*{Data and Ethical Considerations}
 The study uses attributed public numerical datasets and local read-only analytical tasks. It does not act on external services or make financial, medical, or authentication decisions. Dataset labels are excluded from computation. Identifying author information and acknowledgments are omitted for double-blind review.
